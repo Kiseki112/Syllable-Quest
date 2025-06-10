@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Syllables Quest</title>
+  <style>
+    body {
+      background: #181818;
+      color: #fff;
+      font-family: 'Determination Mono', 'Consolas', 'Courier New', monospace;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    @font-face {
+      font-family: 'Determination Mono';
+      src: url('https://files.catbox.moe/9z1q2v.ttf');
+    }
+    .level-select-overlay {
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #181818ee;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .level-select-box {
+      background: #232323;
+      border: 4px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 32px #000a;
+      padding: 40px 32px 32px 32px;
+      min-width: 320px;
+      text-align: center;
+      font-family: 'Determination Mono', monospace;
+      color: #ffb347;
+    }
+    .level-select-title {
+      font-size: 1.4em;
+      margin-bottom: 24px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .level-select-btn {
+      background: #ffb347;
+      color: #232323;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 36px;
+      font-size: 1.1em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 12px 0;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #000a;
+      letter-spacing: 1px;
+      display: block;
+      width: 100%;
+    }
+    .level-select-btn:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .level-select-btn:hover:not(:disabled), .level-select-btn.selected:not(:disabled) {
+      background: #fff;
+      color: #ffb347;
+    }
+    .progress-box {
+      background: #232323;
+      border: 2px solid #ffb347;
+      border-radius: 12px;
+      color: #ffb347;
+      padding: 12px 18px;
+      margin: 18px auto 0 auto;
+      max-width: 340px;
+      font-size: 1em;
+      text-align: center;
+      font-family: inherit;
+      box-shadow: 0 2px 8px #000a;
+    }
+    .progress-btn {
+      background: #ffb347;
+      color: #232323;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 1em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 10px 0 0 0;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #000a;
+      letter-spacing: 1px;
+      display: inline-block;
+    }
+    .progress-btn:hover {
+      background: #fff;
+      color: #ffb347;
+    }
+    #bossModel {
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #bossModel img {
+      width: auto;
+      max-width: 80vw;
+      height: auto;
+      max-height: 320px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 32px #000a);
+      display: block;
+      margin: 0 auto;
+      pointer-events: auto;
+      background: none;
+    }
+    .container {
+      max-width: 98vw;
+      width: 98vw;
+      margin: 0 auto 8px auto;
+      background: #111;
+      border: 4px solid #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+      padding: 0;
+      text-align: left;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+      overflow: visible;
+      min-height: 100px;
+      height: 130px;
+      z-index: 10;
+      margin-bottom: 32px;
+    }
+    #questionBox {
+      position: static;
+      margin: 24px auto 0 auto;
+      z-index: 20;
+      background: #232323;
+      border: 3px solid #ffb347;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #000a;
+      color: #fff;
+      font-family: 'Determination Mono', monospace;
+      font-size: 1.2em;
+      padding: 18px 36px;
+      min-width: 320px;
+      max-width: 90vw;
+      text-align: center;
+      pointer-events: none;
+      transition: box-shadow 0.2s;
+      display: none;
+    }
+    #questionBox.show {
+      pointer-events: auto;
+      box-shadow: 0 8px 32px #ffb34788, 0 4px 24px #000a;
+      display: block;
+    }
+    .undertale-header {
+      background: #222;
+      border-bottom: 2px solid #fff;
+      padding: 10px 32px 6px 32px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-size: 1.1em;
+      font-family: 'Determination Mono', monospace;
+    }
+    .undertale-hpbar-container {
+      width: 220px;
+      height: 22px;
+      background: #222;
+      border: 2px solid #fff;
+      border-radius: 8px;
+      margin-right: 18px;
+      display: inline-block;
+      vertical-align: middle;
+      position: relative;
+      overflow: hidden;
+    }
+    .undertale-hpbar {
+      height: 100%;
+      background: linear-gradient(90deg, #ffe259 0%, #ffa751 100%);
+      border-radius: 8px 0 0 8px;
+      transition: width 0.3s;
+    }
+    .undertale-hpbar-text {
+      position: absolute;
+      width: 100%;
+      top: 0;
+      left: 0;
+      text-align: center;
+      color: #222;
+      font-weight: bold;
+      font-size: 1em;
+      line-height: 22px;
+      text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+      pointer-events: none;
+    }
+    .undertale-score {
+      color: gold;
+      font-size: 1.1em;
+      margin-left: 16px;
+      font-family: inherit;
+    }
+    .undertale-status {
+      color: #ffb347;
+      margin-left: auto;
+      font-size: 1em;
+      font-family: inherit;
+    }
+    .btn-group {
+      display: flex;
+      justify-content: flex-start;
+      gap: 16px;
+      margin: 10px 0 0 32px;
+    }
+    .undertale-btn {
+      background: #ffb347;
+      color: #232323;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 1em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #000a;
+      letter-spacing: 1px;
+    }
+    .undertale-btn:hover {
+      background: #fff;
+      color: #ffb347;
+    }
+    .undertale-btn.quit {
+      background: #ff4f79;
+      color: #fff;
+    }
+    .undertale-btn.quit:hover {
+      background: #fff;
+      color: #ff4f79;
+    }
+    .undertale-main {
+      padding: 12px 32px 8px 32px;
+      min-height: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      position: relative;
+      background: #181818;
+      border-radius: 12px;
+      margin: 12px 32px 0 32px;
+      box-shadow: 0 2px 12px #000a;
+    }
+    .question {
+      font-size: 1.1em;
+      margin: 0;
+      color: #fff;
+      font-family: inherit;
+      text-align: center;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      display: none;
+    }
+    .choices-battle {
+      display: flex;
+      flex-direction: row;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-end;
+      width: 100%;
+      margin: 12px 0 0 0;
+      position: static;
+      pointer-events: auto;
+    }
+    .battle-btn {
+      background: #181818;
+      color: #ffb347;
+      border: 3px solid #ffb347;
+      border-radius: 0;
+      font-family: 'Determination Mono', 'Consolas', monospace;
+      font-size: 1em;
+      font-weight: bold;
+      padding: 10px 28px;
+      margin: 0;
+      box-shadow: 0 0 8px #000a;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      text-shadow: 0 0 6px #ffb347, 0 0 2px #fff;
+      letter-spacing: 2px;
+      outline: none;
+      position: relative;
+    }
+    .battle-btn.selected, .battle-btn:focus {
+      background: #ffb347;
+      color: #181818;
+      border-color: #fff;
+      text-shadow: 0 0 8px #fff, 0 0 2px #ffb347;
+    }
+    .battle-btn:active {
+      background: #fff;
+      color: #ffb347;
+    }
+    .log {
+      background: #181818;
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 24px;
+      color: #eebbc3;
+      border: 1px solid #444;
+      margin: 0 32px 8px 32px;
+      font-size: 1em;
+      font-family: inherit;
+      text-align: center;
+    }
+    .restart-btn {
+      background: #ff4f79;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 1em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 0 auto 12px auto;
+      display: block;
+      transition: background 0.2s, color 0.2s;
+    }
+    .restart-btn:hover {
+      background: #fff;
+      color: #ff4f79;
+    }
+    #wrongAnswerOverlay {
+      display: none;
+      position: fixed;
+      z-index: 5000;
+      left: 0; top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(24, 24, 24, 0.97);
+      align-items: center;
+      justify-content: center;
+    }
+    #wrongAnswerOverlay img {
+      max-width: 60vw;
+      max-height: 60vh;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 0 32px #ff4f79cc);
+    }
+  </style>
+</head>
+<body>
+  <!-- Boss Model at the very top -->
+  <div id="bossModel">
+    <img id="bossImg" src="BOSS_IMAGES[0]" alt="Boss">
+  </div>
+  <!-- Level Select Overlay (top box) -->
+  <div class="level-select-overlay" id="levelSelectOverlay">
+    <div class="level-select-box">
+      <div class="level-select-title">Choose Your Level</div>
+      <button class="level-select-btn" id="levelBtn0" onclick="startGameAtLevel(0)">Level 1: Easy</button>
+      <button class="level-select-btn" id="levelBtn1" onclick="startGameAtLevel(1)" disabled>Level 2: Challenge</button>
+      <button class="level-select-btn" id="levelBtn2" onclick="startGameAtLevel(2)" disabled>Level 3: Hard</button>
+      <button class="level-select-btn" id="levelBtn3" onclick="startGameAtLevel(3)" disabled>Level 4: Impossible</button>
+      <button class="level-select-btn" id="levelBtn4" onclick="startGameAtLevel(4)" disabled>Level 5: Save the World</button>
+      <div id="progressBox" class="progress-box" style="display:none;">
+        <div id="progressMsg"></div>
+        <button class="progress-btn" onclick="continueProgress()">Continue</button>
+        <button class="progress-btn" onclick="clearProgress()">Clear Progress</button>
+      </div>
+    </div>
+  </div>
+  <!-- Wrong answer full-screen overlay -->
+  <div id="wrongAnswerOverlay">
+    <img src="image wiki GIF.gif" alt="Wrong Answer">
+  </div>
+  <!-- Main Game Container (longest box, below boss image and overlay) -->
+  <div class="container" id="gameContainer" style="filter: blur(2px); pointer-events: none; position:relative;">
+    <!-- Boss HP Bar at the top of the box -->
+    <div id="bossHpBar" style="padding:16px 32px 0 32px; text-align:center;"></div>
+    <div class="btn-group">
+      <a href="savefile.html">
+        <button class="undertale-btn">Progress</button>
+      </a>
+      <a href="index.html">
+        <button class="undertale-btn">Start Game</button>
+      </a>
+      <a href="index.html">
+        <button class="undertale-btn quit">Quit</button>
+      </a>
+    </div>
+    <div class="undertale-header">
+      <span id="hearts"></span>
+      <span class="undertale-score" id="score"></span>
+      <span class="undertale-status" id="status"></span>
+    </div>
+    <div class="undertale-main" style="position:relative;">
+      <div class="question" id="question"></div>
+    </div>
+    <div class="choices-battle" id="choices"></div>
+    <div class="log" id="log"></div>
+    <button class="restart-btn" id="restartBtn" onclick="resetGame()" style="display:none;">Restart</button>
+    <audio id="levelAudio" loop></audio>
+    <div id="questionBox"></div>
+  </div>
+  <script>
+    // --- Level music ---
+    const LEVEL_MUSIC = [
+      "Toriel.mp3", // Level 1
+      "Undyne.mp3", // Level 2
+      "Papyrus.mp3", // Level 3
+      "Sns.mp3", // Level 4
+      "His theme.mp3"  // Level 5
+    ];
+    // Dedicated boss images for each level
+    const BOSS_IMAGES = [
+      "amino core GIF.gif", // Level 1
+      "amino core GIF.gif", // Level 2
+      "AnoL.gif", // Level 3
+      "boi GIF.gif", // Level 4
+      "boss5.png"  // Level 5
+    ];
+    let currentAudioLevel = null;
+    const audioElem = document.getElementById('levelAudio');
+    function playLevelMusic(levelIdx) {
+      if (LEVEL_MUSIC[levelIdx]) {
+        audioElem.pause();
+        audioElem.currentTime = 0;
+        audioElem.src = LEVEL_MUSIC[levelIdx];
+        audioElem.currentTime = 0;
+        audioElem.play().catch(()=>{});
+        currentAudioLevel = levelIdx;
+      } else {
+        audioElem.pause();
+        audioElem.src = "";
+        currentAudioLevel = null;
+      }
+    }
+    function updateBossImage() {
+      const bossImg = document.getElementById('bossImg');
+      bossImg.src = BOSS_IMAGES[currentLevel] || BOSS_IMAGES[0];
+      bossImg.alt = `Boss for Level ${currentLevel + 1}`;
+    }
+    // --- Syllable Questions ---
+    const LEVELS = [
+      // Level 1
+      [
+        { word: "banana", syllables: 3 }, { word: "cat", syllables: 1 }, { word: "apple", syllables: 2 },
+        { word: "dog", syllables: 1 }, { word: "table", syllables: 2 }, { word: "window", syllables: 2 },
+        { word: "sun", syllables: 1 }, { word: "moon", syllables: 1 }, { word: "star", syllables: 1 },
+        { word: "river", syllables: 2 }, { word: "mountain", syllables: 2 }, { word: "tree", syllables: 1 },
+        { word: "flower", syllables: 2 }, { word: "grass", syllables: 1 }, { word: "cloud", syllables: 1 },
+        { word: "rain", syllables: 1 }, { word: "snow", syllables: 1 }, { word: "bird", syllables: 1 },
+        { word: "fish", syllables: 1 }, { word: "frog", syllables: 1 }
+      ],
+        
+      // Level 2
+      [
+        { word: "computer", syllables: 3 }, { word: "syllable", syllables: 3 }, { word: "elephant", syllables: 3 },
+        { word: "university", syllables: 5 }, { word: "dictionary", syllables: 4 }, { word: "beautiful", syllables: 3 },
+        { word: "friendship", syllables: 2 }, { word: "adventure", syllables: 3 }, { word: "dragon", syllables: 2 },
+        { word: "imagination", syllables: 5 }, { word: "pencil", syllables: 2 }, { word: "notebook", syllables: 2 },
+        { word: "teacher", syllables: 2 }, { word: "student", syllables: 2 }, { word: "library", syllables: 3 },
+        { word: "science", syllables: 2 }, { word: "history", syllables: 3 }, { word: "mathematics", syllables: 4 },
+        { word: "geography", syllables: 4 }, { word: "astronomy", syllables: 4 },
+        { word: "animal", syllables: 3 },
+        { word: "umbrella", syllables: 3 },
+        { word: "hospital", syllables: 3 },
+        { word: "family", syllables: 3 },
+        { word: "camera", syllables: 3 },
+        { word: "energy", syllables: 3 },
+        { word: "music", syllables: 2 },
+        { word: "picture", syllables: 2 },
+        { word: "garden", syllables: 2 }
+      ],
+    
+      // Level 3 (Hard - longer, more complex words)
+      [
+        { word: "responsibility", syllables: 6 },
+        { word: "internationalization", syllables: 8 },
+        { word: "uncharacteristically", syllables: 8 },
+        { word: "misinterpretation", syllables: 7 },
+        { word: "photosynthesis", syllables: 5 },
+        { word: "extraordinary", syllables: 6 },
+        { word: "incomprehensible", syllables: 6 },
+        { word: "communication", syllables: 5 },
+        { word: "encyclopedia", syllables: 6 },
+        { word: "revolutionary", syllables: 6 },
+        { word: "mathematical", syllables: 5 },
+        { word: "psychological", syllables: 6 },
+        { word: "infrastructure", syllables: 4 },
+        { word: "multiplication", syllables: 5 },
+        { word: "pronunciation", syllables: 5 },
+        { word: "collaboration", syllables: 5 },
+        { word: "environmental", syllables: 5 },
+        { word: "individuality", syllables: 7 },
+        { word: "characterization", syllables: 7 },
+        { word: "institutionalization", syllables: 8 }, 
+        { word: "recommendation", syllables: 6 },
+        { word: "investigation", syllables: 6 },
+        { word: "determination", syllables: 5 },
+        { word: "organization", syllables: 5 },
+        { word: "transportation", syllables: 5 },
+        { word: "identification", syllables: 6 },
+        { word: "qualification", syllables: 5 },
+        { word: "participation", syllables: 6 },
+        { word: "representation", syllables: 6 },
+        { word: "administration", syllables: 6 },
+        { word: "interpretation", syllables: 6 },
+        { word: "congratulations", syllables: 5 },
+        { word: "civilization", syllables: 5 },
+        { word: "accommodation", syllables: 6 },
+        { word: "mathematics", syllables: 4 },
+        { word: "architecture", syllables: 4 },
+        { word: "opportunity", syllables: 5 },
+        { word: "possibility", syllables: 5 },
+        { word: "unbelievable", syllables: 6 },
+        { word: "responsibility", syllables: 6 }
+      ],
+      // Level 4 (Impossible)
+      [
+        { word: "internationalization", syllables: 8 },
+        { word: "uncharacteristically", syllables: 8 },
+        { word: "counterrevolutionaries", syllables: 9 },
+        { word: "institutionalization", syllables: 8 },
+        { word: "disproportionately", syllables: 6 },
+        { word: "unconstitutionality", syllables: 8 },
+        { word: "unintelligibility", syllables: 8 },
+        { word: "misinterpretation", syllables: 6 },
+        { word: "characterization", syllables: 6 },
+        { word: "psychopharmacological", syllables: 8 },
+        { word: "electroencephalograph", syllables: 8 },
+        { word: "anthropomorphization", syllables: 8 },
+        { word: "micropaleontological", syllables: 9 },
+        { word: "immunohistochemistry", syllables: 8 },
+        { word: "hypercholesterolemia", syllables: 8 },
+        { word: "otorhinolaryngologist", syllables: 9 },
+        { word: "institutionalizations", syllables: 9 },
+        { word: "counterdemonstrations", syllables: 8 },
+        { word: "microcrystallography", syllables: 8 },
+        { word: "neuropsychopharmacology", syllables: 10 },
+        { word: "electroencephalograms", syllables: 8 },
+        { word: "uncompartmentalized", syllables: 8 },
+        { word: "hyperimmunoglobulinemia", syllables: 10 },
+        { word: "antidisestablishmentarian", syllables: 10 },
+        { word: "psychoneuroimmunology", syllables: 9 },
+        { word: "immunoelectrophoresis", syllables: 9 },
+        { word: "spectrophotofluorometer", syllables: 9 },
+        { word: "counterreconnaissance", syllables: 8 },
+        { word: "electrocardiographic", syllables: 8 },
+        { word: "institutionalizing", syllables: 7 },
+        { word: "unconstitutionally", syllables: 8 },
+        { word: "deoxyribonucleotides", syllables: 9 },
+        { word: "uncharacteristically", syllables: 8 },
+        { word: "counterdemonstration", syllables: 8 },
+        { word: "immunohistochemistries", syllables: 9 },
+        { word: "psychopharmacologists", syllables: 8 },
+        { word: "counterproliferation", syllables: 8 },
+        { word: "institutionalizations", syllables: 9 },
+        { word: "counterproductiveness", syllables: 8 },
+        { word: "unintelligibilities", syllables: 9 }
+      ],
+      // Level 5 (Save the World - 10-20 syllables)
+      [
+        { word: "pneumonoultramicroscopicsilicovolcanoconiosis", syllables: 19 },
+        { word: "hippopotomonstrosesquipedaliophobia", syllables: 15 },
+        { word: "floccinaucinihilipilification", syllables: 12 },
+        { word: "antidisestablishmentarianism", syllables: 11 },
+        { word: "electroencephalographically", syllables: 12 },
+        { word: "thyroparathyroidectomized", syllables: 11 },
+        { word: "psychoneuroendocrinological", syllables: 13 },
+        { word: "radioimmunoelectrophoresis", syllables: 12 },
+        { word: "spectrophotofluorometrically", syllables: 13 },
+        { word: "immunoelectrophoretically", syllables: 12 },
+        { word: "dichlorodiphenyltrichloroethane", syllables: 12 },
+        { word: "tetrahydrocannabinol", syllables: 9 },
+        { word: "trinitrophenylmethylnitramine", syllables: 13 },
+        { word: "hexamethylenetetramine", syllables: 10 },
+        { word: "methionylthreonylthreonine", syllables: 11 },
+        { word: "immunohistochemically", syllables: 10 },
+        { word: "phosphatidylethanolamine", syllables: 11 },
+        { word: "chlorofluorocarbonates", syllables: 10 },
+        { word: "polyvinylpyrrolidone", syllables: 9 },
+        { word: "hydroxydehydroepiandrosterone", syllables: 13 },
+        { word: "phenylpropanolamine", syllables: 8 },
+        { word: "trinitrotoluene", syllables: 7 },
+        { word: "methylchloroisothiazolinone", syllables: 11 },
+        { word: "immunocytochemically", syllables: 10 },
+        { word: "deoxyribonucleoprotein", syllables: 11 },
+        { word: "phosphatidylinositol", syllables: 9 },
+        { word: "immunoelectrophoreses", syllables: 10 },
+        { word: "electroencephalographies", syllables: 11 },
+        { word: "psychoneuroimmunological", syllables: 12 },
+        { word: "electroencephalograph", syllables: 8 },
+        { word: "psychopharmacological", syllables: 8 },
+        { word: "counterrevolutionaries", syllables: 9 },
+        { word: "institutionalizations", syllables: 9 },
+        { word: "counterdemonstrations", syllables: 8 },
+        { word: "microcrystallography", syllables: 8 },
+        { word: "neuropsychopharmacology", syllables: 10 },
+        { word: "hyperimmunoglobulinemia", syllables: 10 },
+        { word: "antidisestablishmentarian", syllables: 10 },
+        { word: "spectrophotofluorometer", syllables: 9 },
+        { word: "counterreconnaissance", syllables: 8 },
+        { word: "electrocardiographic", syllables: 8 },
+        { word: "unintelligibilities", syllables: 9 },
+        { word: "immunohistochemistries", syllables: 9 },
+        { word: "psychopharmacologists", syllables: 8 },
+        { word: "counterproliferation", syllables: 8 },
+        { word: "counterproductiveness", syllables: 8 },
+        { word: "deoxyribonucleotides", syllables: 9 },
+        { word: "institutionalizing", syllables: 7 },
+        { word: "unconstitutionally", syllables: 8 },
+        { word: "uncharacteristically", syllables: 8 }
+      ]         
+    ];
+    // --- Level unlock logic ---
+    const LEVEL_UNLOCK_KEY = "syllables_quest_level_unlocks";
+    function getLevelUnlocks() {
+      let unlocks = [true, false, false, false, false];
+      try {
+        const saved = JSON.parse(localStorage.getItem(LEVEL_UNLOCK_KEY));
+        if (Array.isArray(saved) && saved.length === LEVELS.length) unlocks = saved;
+      } catch {}
+      return unlocks;
+    }
+    function setLevelUnlock(levelIdx) {
+      let unlocks = getLevelUnlocks();
+      if (levelIdx + 1 < unlocks.length) unlocks[levelIdx + 1] = true;
+      localStorage.setItem(LEVEL_UNLOCK_KEY, JSON.stringify(unlocks));
+    }
+    function updateLevelButtons() {
+      const unlocks = getLevelUnlocks();
+      for (let i = 0; i < LEVELS.length; i++) {
+        const btn = document.getElementById('levelBtn' + i);
+        if (btn) {
+          btn.disabled = !unlocks[i];
+        }
+      }
+    }
+    const maxHP = 100;
+    let hp = maxHP;
+    let score, logLines, gameOver, currentLevel = 0, usedQuestions = [], currentQuestion;
+    let selectedChoiceIdx = 0;
+    let currentChoices = [];
+    const LEVEL_DMG = [5, 10, 15, 20, 25];
+    const BOSS_HP = [200, 400, 500, 650 , 850 ];
+    const BOSS_DMG = [10, 16, 20, 25, 40];
+    let bossHP = BOSS_HP[0];
+    const PROGRESS_KEY = "syllables_quest_progress_v1";
+    function saveProgress() {
+      const progress = {
+        currentLevel,
+        hp,
+        bossHP,
+        score,
+        usedQuestions,
+        logLines,
+        gameOver
+      };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    }
+    function loadProgress() {
+      const data = localStorage.getItem(PROGRESS_KEY);
+      if (!data) return null;
+      try {
+        return JSON.parse(data);
+      } catch {
+        return null;
+      }
+    }
+    function clearProgress() {
+      localStorage.removeItem(PROGRESS_KEY);
+      document.getElementById('progressBox').style.display = 'none';
+    }
+    function continueProgress() {
+      const progress = loadProgress();
+      if (!progress) return;
+      currentLevel = progress.currentLevel;
+      hp = progress.hp;
+      bossHP = progress.bossHP ?? BOSS_HP[currentLevel];
+      score = progress.score;
+      usedQuestions = progress.usedQuestions;
+      logLines = progress.logLines;
+      gameOver = progress.gameOver;
+      document.getElementById('levelSelectOverlay').style.display = 'none';
+      document.getElementById('gameContainer').style.filter = '';
+      document.getElementById('gameContainer').style.pointerEvents = '';
+      document.getElementById('progressBox').style.display = 'none';
+      updateBossImage();
+      updateUI();
+      playLevelMusic(currentLevel);
+      if (!gameOver) nextQuestion();
+    }
+    function startGameAtLevel(levelIdx) {
+      currentLevel = levelIdx;
+      hp = maxHP;
+      bossHP = BOSS_HP[levelIdx];
+      score = 0;
+      logLines = ["Welcome to Syllables Quest!"];
+      gameOver = false;
+      usedQuestions = [];
+      selectedChoiceIdx = 0;
+      document.getElementById('levelSelectOverlay').style.display = 'none';
+      document.getElementById('gameContainer').style.filter = '';
+      document.getElementById('gameContainer').style.pointerEvents = '';
+      document.getElementById('progressBox').style.display = 'none';
+      updateBossImage();
+      updateUI();
+      playLevelMusic(currentLevel);
+      nextQuestion();
+    }
+    function resetGame() {
+      hp = maxHP;
+      bossHP = BOSS_HP[currentLevel];
+      score = 0;
+      logLines = ["Welcome to Syllables Quest!"];
+      gameOver = false;
+      usedQuestions = [];
+      selectedChoiceIdx = 0;
+      document.getElementById('restartBtn').style.display = "none";
+      updateBossImage();
+      nextQuestion();
+      updateUI();
+      saveProgress();
+      playLevelMusic(currentLevel);
+    }
+    function getAllSyllableAnswers(level) {
+      const set = new Set(LEVELS[level].map(q => q.syllables));
+      return Array.from(set);
+    }
+    function getRandomQuestion() {
+      const available = LEVELS[currentLevel].filter((q, idx) => !usedQuestions.includes(idx));
+      if (available.length === 0) return null;
+      const idx = Math.floor(Math.random() * available.length);
+      const realIdx = LEVELS[currentLevel].findIndex((q, i) => !usedQuestions.includes(i) && q.word === available[idx].word);
+      usedQuestions.push(realIdx);
+      return available[idx];
+    }
+    function getChoices(correct) {
+      let allAnswers = getAllSyllableAnswers(currentLevel);
+      allAnswers = allAnswers.filter(ans => ans !== correct);
+      while (allAnswers.length < 3) {
+        let rand = Math.floor(Math.random() * 8) + 1;
+        if (rand !== correct && !allAnswers.includes(rand)) allAnswers.push(rand);
+      }
+      let choices = [correct, ...allAnswers.slice(0, 3)];
+      for (let i = choices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choices[i], choices[j]] = [choices[j], choices[i]];
+      }
+      return choices;
+    }
+    function showQuestionBox(text) {
+      // Show question in main area, not floating box
+      const q = document.getElementById('question');
+      q.innerHTML = text;
+      q.style.display = 'flex';
+      document.getElementById('questionBox').style.display = 'none';
+      document.getElementById('questionBox').classList.remove('show');
+    }
+    function hideQuestionBox() {
+      document.getElementById('question').style.display = 'none';
+      document.getElementById('question').innerHTML = '';
+      document.getElementById('questionBox').style.display = 'none';
+      document.getElementById('questionBox').classList.remove('show');
+    }
+    // Show wrong answer overlay for 3 seconds, then continue
+    function showWrongAnswerOverlay() {
+      const overlay = document.getElementById('wrongAnswerOverlay');
+      overlay.style.display = 'flex';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        nextQuestion();
+      }, 3000);
+    }
+    function nextQuestion() {
+      // Boss defeated
+      if (bossHP <= 0) {
+        setLevelUnlock(currentLevel);
+        updateLevelButtons();
+        if (currentLevel < LEVELS.length - 1) {
+          logLines.push(`<span style="color:gold;">Boss defeated! Level ${currentLevel + 1} complete! Proceeding to Level ${currentLevel + 2}.</span>`);
+          currentLevel++;
+          bossHP = BOSS_HP[currentLevel];
+          usedQuestions = [];
+          selectedChoiceIdx = 0;
+          updateBossImage(); // <-- update boss image on level change
+          setTimeout(() => {
+            nextQuestion();
+            updateUI();
+            saveProgress();
+            playLevelMusic(currentLevel);
+          }, 1200);
+          updateUI();
+          saveProgress();
+          playLevelMusic(currentLevel);
+          hideQuestionBox();
+          return;
+        } else {
+          logLines.push(`<span style="color:lightgreen;">Congratulations! You defeated all bosses! Final score: ${score}</span>`);
+          document.getElementById('choices').innerHTML = "";
+          document.getElementById('restartBtn').style.display = "";
+          gameOver = true;
+          updateUI();
+          saveProgress();
+          saveToSavefile();
+          audioElem.pause();
+          hideQuestionBox();
+          return;
+        }
+      }
+      // Player defeated
+      if (hp <= 0) {
+        logLines.push(`<span style="color:#ff4f79;">Game Over! Your final score: ${score}</span>`);
+        document.getElementById('choices').innerHTML = "";
+        document.getElementById('restartBtn').style.display = "";
+        gameOver = true;
+        updateUI();
+        saveProgress();
+        saveToSavefile();
+        audioElem.pause();
+        hideQuestionBox();
+        return;
+      }
+      if (usedQuestions.length >= LEVELS[currentLevel].length) {
+        usedQuestions = [];
+      }
+      currentQuestion = getRandomQuestion();
+      if (!currentQuestion) return;
+      currentChoices = getChoices(currentQuestion.syllables);
+      selectedChoiceIdx = 0;
+      renderChoices();
+      showQuestionBox(
+        `Level ${currentLevel + 1} - How many syllables are in <strong>${currentQuestion.word}</strong>?`
+      );
+      saveProgress();
+    }
+    function renderChoices() {
+      let html = "";
+      currentChoices.forEach((choice, idx) => {
+        html += `<button class="battle-btn${selectedChoiceIdx === idx ? ' selected' : ''}" 
+          onclick="choose(${choice})" 
+          onmouseover="setSelected(${idx})"
+          tabindex="0">
+          ${choice}
+        </button>`;
+      });
+      document.getElementById('choices').innerHTML = html;
+    }
+    function setSelected(idx) {
+      selectedChoiceIdx = idx;
+      renderChoices();
+    }
+    function choose(selected) {
+      if (gameOver) return;
+      if (selected === currentQuestion.syllables) {
+        score += 20;
+        const bossDmg = BOSS_DMG[currentLevel] || 10;
+        bossHP -= bossDmg;
+        if (bossHP < 0) bossHP = 0;
+        logLines.push(`<span style="color:lightgreen;">Correct! +20 points. Boss takes ${bossDmg} damage!</span>`);
+        updateUI();
+        saveProgress();
+        setTimeout(nextQuestion, 400);
+      } else {
+        const dmg = LEVEL_DMG[currentLevel] || 10;
+        hp -= dmg;
+        if (hp < 0) hp = 0;
+        logLines.push(`<span style="color:#ff4f79;">Wrong! The answer was ${currentQuestion.syllables}. -${dmg} HP.</span>`);
+        updateUI();
+        saveProgress();
+        showWrongAnswerOverlay();
+      }
+    }
+    function updateUI() {
+      // HP Bar
+      let hpPercent = Math.max(0, Math.min(hp / maxHP, 1));
+      let hpBar = `
+        <span class="undertale-hpbar-container">
+          <div class="undertale-hpbar" style="width:${hpPercent * 100}%"></div>
+          <span class="undertale-hpbar-text">${hp} / ${maxHP} HP</span>
+        </span>
+      `;
+      document.getElementById('hearts').innerHTML = hpBar;
+      document.getElementById('score').textContent = "Score: " + score;
+      document.getElementById('log').innerHTML = logLines.slice(-3).join("<br>");
+      document.getElementById('status').textContent = gameOver ? "Game Over!" : "";
+
+      // Boss HP Bar at the top of the box
+      let bossMax = BOSS_HP[currentLevel];
+      let bossPercent = Math.max(0, Math.min(bossHP / bossMax, 1));
+      let bossBar = `
+        <span class="undertale-hpbar-container" style="background:#2a1a1a;border-color:#ff4f79;">
+          <div class="undertale-hpbar" style="background:linear-gradient(90deg,#ff4f79 0%,#ffb347 100%);width:${bossPercent * 100}%"></div>
+          <span class="undertale-hpbar-text" style="color:#ff4f79">${bossHP} / ${bossMax} Boss HP</span>
+        </span>
+      `;
+      document.getElementById('bossHpBar').innerHTML = bossBar;
+
+      // Update boss image in the center for the current level
+      updateBossImage();
+
+      if (!gameOver && currentChoices.length) renderChoices();
+    }
+    document.addEventListener('keydown', function(e) {
+      if (document.getElementById('levelSelectOverlay').style.display !== 'none') return;
+      if (gameOver || !currentChoices.length) return;
+      if (e.key === "ArrowLeft" || e.key === "a") {
+        selectedChoiceIdx = (selectedChoiceIdx - 1 + currentChoices.length) % currentChoices.length;
+        renderChoices();
+        e.preventDefault();
+      }
+      if (e.key === "ArrowRight" || e.key === "d") {
+        selectedChoiceIdx = (selectedChoiceIdx + 1) % currentChoices.length;
+        renderChoices();
+        e.preventDefault();
+      }
+      if (e.key === "Enter" || e.key === " ") {
+        choose(currentChoices[selectedChoiceIdx]);
+        e.preventDefault();
+      }
+    });
+    function saveToSavefile() {
+      let savefile = [];
+      try {
+        savefile = JSON.parse(localStorage.getItem('syllables_quest_savefile') || '[]');
+      } catch {}
+      savefile.push({
+        date: new Date().toISOString(),
+        score: score,
+        level: currentLevel + 1,
+        status: hp <= 0 ? "Game Over" : "Completed",
+        hp: hp,
+        bossHP: bossHP,
+        log: logLines.slice(-5)
+      });
+      localStorage.setItem('syllables_quest_savefile', JSON.stringify(savefile));
+    }
+    window.onload = function() {
+      updateLevelButtons();
+      updateBossImage();
+      const progress = loadProgress();
+      if (progress && !progress.gameOver) {
+        document.getElementById('progressBox').style.display = '';
+        document.getElementById('progressMsg').innerHTML =
+          `You have unfinished progress:<br>
+          <b>Level:</b> ${progress.currentLevel + 1} &nbsp; <b>Score:</b> ${progress.score} &nbsp; <b>HP:</b> ${progress.hp}`;
+      } else {
+        document.getElementById('progressBox').style.display = 'none';
+      }
+      document.getElementById('levelSelectOverlay').style.display = '';
+      document.getElementById('gameContainer').style.filter = 'blur(2px)';
+      document.getElementById('gameContainer').style.pointerEvents = 'none';
+      hideQuestionBox();
+    };
+    window.addEventListener('beforeunload', function() {
+      audioElem.pause();
+    });
+  </script>
+</body>
+</html>

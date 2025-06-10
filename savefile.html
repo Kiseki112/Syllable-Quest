@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Syllables Quest - Progress</title>
+  <style>
+    body {
+      background: #181818;
+      color: #fff;
+      font-family: 'Determination Mono', 'Consolas', 'Courier New', monospace;
+      margin: 0;
+      padding: 0;
+    }
+    @font-face {
+      font-family: 'Determination Mono';
+      src: url('https://files.catbox.moe/9z1q2v.ttf');
+    }
+    .container {
+      max-width: 540px;
+      margin: 60px auto;
+      background: #111;
+      border: 4px solid #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+      padding: 0 0 32px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .undertale-header {
+      background: #222;
+      border-bottom: 2px solid #fff;
+      padding: 24px 32px 16px 32px;
+      font-size: 1.5em;
+      font-family: 'Determination Mono', monospace;
+      color: #ffb347;
+      letter-spacing: 2px;
+    }
+    .progress-table {
+      width: 90%;
+      margin: 32px auto 0 auto;
+      border-collapse: collapse;
+      background: #181818;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 1.1em;
+    }
+    .progress-table th, .progress-table td {
+      border: 1px solid #444;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .progress-table th {
+      background: #232323;
+      color: #ffb347;
+      font-weight: bold;
+    }
+    .progress-table td {
+      background: #181818;
+      color: #fff;
+    }
+    .level-name {
+      color: #ffb347;
+      font-weight: bold;
+    }
+    .btn {
+      background: #ffb347;
+      color: #232323;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 1em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 24px 8px 0 8px;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #000a;
+      letter-spacing: 1px;
+    }
+    .btn:hover {
+      background: #fff;
+      color: #ffb347;
+    }
+    .note {
+      color: #eebbc3;
+      margin-top: 18px;
+      font-size: 0.98em;
+    }
+  </style>
+</head>
+<body>
+  <audio id="bgMusic" src="sans theme.mp3" autoplay loop></audio>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+    // --- AUDIO AUTOPLAY FIX ---
+    // Try to autoplay on load, and also on first user interaction (for browser policies)
+    function tryPlayBgMusic() {
+      const bg = document.getElementById('bgMusic');
+      if (bg) {
+        bg.volume = 0.5;
+        bg.play().catch(() => {});
+      }
+    }
+    window.addEventListener('load', function() {
+      tryPlayBgMusic();
+    });
+    // Fallback: play on first user interaction if blocked
+    document.addEventListener('pointerdown', function playOnce() {
+      tryPlayBgMusic();
+      document.removeEventListener('pointerdown', playOnce);
+    });
+  </script>
+  <div class="container">
+    <div class="undertale-header">
+      Syllables Quest<br>Game Progress
+    </div>
+    <table class="progress-table" id="progressTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Level</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Hearts Left</th>
+          <th>Log</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Progress rows will be inserted here -->
+      </tbody>
+    </table>
+    <button class="btn" onclick="window.location.href='game.html'">Back to Game</button>
+    <button class="btn" onclick="clearAllProgress()">Clear All Progress</button>
+    <div class="note" id="note"></div>
+  </div>
+  <!-- Sakura Canvas Background -->
+  <canvas id="sakura-canvas" style="position:fixed; left:0; top:0; width:100vw; height:100vh; pointer-events:none; z-index:0;"></canvas>
+  <script>
+    // Level names (should match your game.html)
+    const LEVEL_NAMES = [
+      "Level 1: Easy",
+      "Level 2: Challenge",
+      "Level 3: Hard"
+    ];
+    // Use a separate key for permanent save history
+    const SAVEFILE_KEY = "syllables_quest_savefile";
+
+    function getAllProgress() {
+      const data = localStorage.getItem(SAVEFILE_KEY);
+      if (!data) return [];
+      try {
+        return JSON.parse(data);
+      } catch {
+        return [];
+      }
+    }
+    function clearAllProgress() {
+      localStorage.removeItem(SAVEFILE_KEY);
+      renderProgress();
+      document.getElementById('note').textContent = "All progress cleared!";
+    }
+    function renderProgress() {
+      const allProgress = getAllProgress();
+      const tbody = document.querySelector("#progressTable tbody");
+      tbody.innerHTML = "";
+      if (!allProgress.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6">No progress found. Play the game to start tracking your progress!</td>
+          </tr>
+        `;
+        document.getElementById('note').textContent = "";
+        return;
+      }
+      // Show most recent first
+      allProgress.slice().reverse().forEach(entry => {
+        const date = new Date(entry.date).toLocaleString();
+        const level = LEVEL_NAMES[entry.level - 1] || `Level ${entry.level}`;
+        const status = entry.status || "";
+        const score = entry.score || 0;
+        const hearts = (typeof entry.hearts !== "undefined") ? entry.hearts : (status === "Game Over" ? 0 : 3);
+        const log = (entry.log || []).map(line => `<div>${line}</div>`).join("");
+        tbody.innerHTML += `
+          <tr>
+            <td>${date}</td>
+            <td class="level-name">${level}</td>
+            <td>${status}</td>
+            <td>${score}</td>
+            <td>${hearts}</td>
+            <td style="font-size:0.95em;">${log}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('note').textContent = "";
+    }
+    renderProgress();
+  </script>
+  <script>
+    // Sakura Petal Animation
+    const sakuraCanvas = document.getElementById('sakura-canvas');
+    const ctx = sakuraCanvas.getContext('2d');
+    let petals = [];
+    const petalCount = 32;
+
+    function resizeSakura() {
+      sakuraCanvas.width = window.innerWidth;
+      sakuraCanvas.height = window.innerHeight;
+    }
+    resizeSakura();
+    window.addEventListener('resize', resizeSakura);
+
+    function randomPetal() {
+      const colors = ["#f9c9de", "#f7b7d3", "#f6a7c9", "#fff0f6"];
+      return {
+        x: Math.random() * sakuraCanvas.width,
+        y: Math.random() * -sakuraCanvas.height,
+        r: 8 + Math.random() * 10,
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.02,
+        speed: 1.2 + Math.random() * 1.8,
+        drift: (Math.random() - 0.5) * 0.8,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        sway: Math.random() * 2 * Math.PI
+      };
+    }
+
+    function drawPetal(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-p.r * 0.6, -p.r * 0.2, -p.r * 0.8, -p.r * 1.1, 0, -p.r);
+      ctx.bezierCurveTo(p.r * 0.8, -p.r * 1.1, p.r * 0.6, -p.r * 0.2, 0, 0);
+      ctx.closePath();
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.7;
+      ctx.shadowColor = "#fff";
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    function animateSakura() {
+      ctx.clearRect(0, 0, sakuraCanvas.width, sakuraCanvas.height);
+      for (let p of petals) {
+        p.y += p.speed;
+        p.x += Math.sin(p.sway + p.y / 60) * 0.8 + p.drift;
+        p.rot += p.rotSpeed;
+        if (p.y > sakuraCanvas.height + 20) {
+          // Respawn at top
+          Object.assign(p, randomPetal(), { y: -20, x: Math.random() * sakuraCanvas.width });
+        }
+        drawPetal(p);
+      }
+      requestAnimationFrame(animateSakura);
+    }
+
+    // Initialize petals
+    petals = Array.from({ length: petalCount }, randomPetal);
+    animateSakura();
+  </script>
+</body>
+</html>
