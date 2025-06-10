@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Syllables Quest</title>
+  <style>
+    body {
+      background: #181818;
+      color: #fff;
+      font-family: 'Determination Mono', 'Consolas', 'Courier New', monospace;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    @font-face {
+      font-family: 'Determination Mono';
+      src: url('https://files.catbox.moe/9z1q2v.ttf');
+    }
+    .container {
+      max-width: 540px;
+      margin: 80px auto;
+      background: #111;
+      border: 4px solid #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+      padding: 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      z-index: 2;
+    }
+    .undertale-header {
+      background: #222;
+      border-bottom: 2px solid #fff;
+      padding: 24px 32px 16px 32px;
+      font-size: 1.6em;
+      font-family: 'Determination Mono', monospace;
+      color: #ffb347;
+      letter-spacing: 2px;
+    }
+    .undertale-main {
+      padding: 40px 32px 32px 32px;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .undertale-btn {
+      background: #ffb347;
+      color: #232323;
+      border: none;
+      border-radius: 8px;
+      padding: 16px 48px;
+      font-size: 1.2em;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 18px 0;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #000a;
+      letter-spacing: 1px;
+    }
+    .undertale-btn:hover {
+      background: #fff;
+      color: #ffb347;
+    }
+    .undertale-desc {
+      color: #eebbc3;
+      font-size: 1.1em;
+      margin-bottom: 32px;
+      margin-top: 12px;
+      font-family: inherit;
+    }
+    .anime-girl-side {
+      position: fixed;
+      right: 2vw;
+      bottom: 0;
+      width: 340px;
+      height: 480px;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    #anime-canvas {
+      width: 340px !important;
+      height: 480px !important;
+      min-width: 220px;
+      min-height: 320px;
+      max-width: 90vw;
+      max-height: 90vh;
+      background: transparent;
+      display: block;
+      pointer-events: none;
+      border: none;
+    }
+    /* 3D model container */
+    .model-side {
+      position: fixed;
+      left: 2vw;
+      bottom: 0;
+      width: 340px;
+      height: 480px;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    #model-canvas {
+      width: 340px !important;
+      height: 480px !important;
+      min-width: 220px;
+      min-height: 320px;
+      max-width: 90vw;
+      max-height: 90vh;
+      background: transparent;
+      display: block;
+      pointer-events: none;
+      border: none;
+    }
+    .speech-bubble {
+      position: absolute;
+      right: 340px;
+      bottom: 120px;
+      background: #fff;
+      color: #232323;
+      border-radius: 18px;
+      border: 3px solid #ffb347;
+      padding: 18px 28px;
+      font-size: 1.1em;
+      font-family: inherit;
+      min-width: 180px;
+      max-width: 320px;
+      box-shadow: 0 2px 12px #000a;
+      z-index: 11;
+      text-align: left;
+      animation: popin 0.5s;
+      pointer-events: auto;
+    }
+    @keyframes popin {
+      0% { transform: scale(0.7); opacity: 0;}
+      100% { transform: scale(1); opacity: 1;}
+    }
+    .speech-bubble::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      bottom: 24px;
+      border-width: 12px 0 12px 24px;
+      border-style: solid;
+      border-color: transparent transparent transparent #fff;
+      filter: drop-shadow(0 0 2px #ffb347);
+    }
+    @media (max-width: 900px) {
+      .anime-girl-side, .model-side { width: 180px; height: 260px; }
+      #anime-canvas, #model-canvas { width: 180px !important; height: 260px !important; }
+      .speech-bubble { right: 180px; min-width: 120px; max-width: 180px; font-size: 0.95em; }
+    }
+    @media (max-width: 600px) {
+      .container { max-width: 98vw; }
+      .undertale-header, .undertale-main { padding-left: 8px; padding-right: 8px; }
+      .anime-girl-side, .model-side { display: none; }
+      .speech-bubble { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Anime Girl Side Panel -->
+  <div class="anime-girl-side">
+    <canvas id="anime-canvas"></canvas>
+    <div class="speech-bubble" id="speechBubble"></div>
+  </div>
+  <!-- 3D Model Side Panel -->
+  <div class="model-side">
+    <canvas id="model-canvas"></canvas>
+  </div>
+  <!-- Loader Overlay -->
+  <div class="loader-bg" id="loaderBg">
+    <div>
+      <div class="loader"></div>
+      <div class="loader-text">Loading Syllables Quest...</div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="undertale-header">
+      Syllables Quest
+    </div>
+    <div class="undertale-main">
+      <div class="undertale-desc">
+        Test your knowledge of syllables in this quiz adventure.<br>
+        <span style="color:#ff4f79;">Can you clear all the levels?</span>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 12px;">
+        <a href="savefile.html">
+          <button class="undertale-btn">Progress</button>
+        </a>
+        <a href="game.html" onclick="localStorage.setItem('bgMusicContinue','1')">
+          <button class="undertale-btn">Start Game</button>
+        </a>
+      </div>
+      <div style="margin-top:24px; color:#888; font-size:0.95em;">
+        &copy; 2025 -Gelo<br>
+        <span style="font-size:0.9em;">Created for educational purposes</span>
+      </div>
+    </div>
+  </div>
+  <!-- Background music for index page -->
+  <audio id="bgMusic" src="Snowdine.mp3" autoplay loop></audio>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+    // --- AUDIO AUTOPLAY FIX ---
+    // Try to autoplay on load, and also on first user interaction (for browser policies)
+    function tryPlayBgMusic() {
+      const bg = document.getElementById('bgMusic');
+      if (bg) {
+        bg.volume = 0.5;
+        bg.play().catch(() => {});
+      }
+    }
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        document.getElementById('loaderBg').style.opacity = 0;
+        setTimeout(() => {
+          document.getElementById('loaderBg').style.display = 'none';
+        }, 600);
+      }, 1200);
+      tryPlayBgMusic();
+    });
+    // Fallback: play on first user interaction if blocked
+    document.addEventListener('pointerdown', function playOnce() {
+      tryPlayBgMusic();
+      document.removeEventListener('pointerdown', playOnce);
+    });
+  </script>
+</body>
+</html>
